@@ -41,19 +41,25 @@ def scrape_data_point():
             loguru.logger.error("Could not find the 'mostRead' span.")
             return "failed: mostRead span not found"
 
-        # 4. Find the first "most-read-item"
-        first_item = most_read_section.select_one("div.most-read-item")
+        # 4. Find the first row in the "Most Read" section
+        first_row = most_read_section.find("div", class_="row")
+        if not first_row:
+            loguru.logger.error("No 'row' div found in the 'mostRead' section.")
+            return "failed: row div not found in mostRead section"
+        
+        # 5. Find the first "most-read-item"
+        first_item = most_read_section.find("most-read-item")
         if not first_item:
             loguru.logger.error("No 'most-read-item' div found.")
             return "failed: most-read-item div not found"
 
-        # 5. Extract the headline from the <a> tag
+        # 6. Extract the headline from the <a> tag
         headline_link = first_item.find("a", class_="frontpage-link standard-link")
         if not headline_link:
             loguru.logger.error("No article link found in the first most-read item.")
             return "failed: article link not found"
 
-        # 6. Get the text of the headline
+        # 7. Get the text of the headline
         headline_text = headline_link.get_text(strip=True)
         return headline_text
 
