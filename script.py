@@ -33,9 +33,8 @@ def scrape_data_point():
 
     if req.ok:
         soup = bs4.BeautifulSoup(req.text, "html.parser")
-        most_read_section = soup.find("section", {"id": "most-read"})
+        most_read_section = soup.find("a", class_="frontpage-section frontpage-section-inverse section-most-read")
         if most_read_section:
-            # Get the first <a> tag from the Most Read list.
             target_element = most_read_section.find("a")
             loguru.logger.info("Found Most Read section.")
         else:
