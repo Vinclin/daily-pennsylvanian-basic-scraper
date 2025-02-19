@@ -15,6 +15,10 @@
     [
       "2025-02-19 12:16PM",
       "failed: row div not found in mostRead section"
+    ],
+    [
+      "2025-02-19 12:42PM",
+      "failed: headline link not found"
     ]
   ]
 }
