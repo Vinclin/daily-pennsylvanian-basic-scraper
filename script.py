@@ -42,13 +42,13 @@ def scrape_data_point():
             return "failed: mostRead span not found"
 
         # 4. Find the first row in the "Most Read" section
-        first_row = most_read_section.find("div", class_="row")
+        first_row = most_read_section.select_one("div.row")
         if not first_row:
             loguru.logger.error("No 'row' div found in the 'mostRead' section.")
             return "failed: row div not found in mostRead section"
         
         # 5. Find the first "most-read-item"
-        first_item = most_read_section.find("most-read-item")
+        first_item = most_read_section.select_one("div.col-sm-5.most-read-item")
         if not first_item:
             loguru.logger.error("No 'most-read-item' div found.")
             return "failed: most-read-item div not found"
