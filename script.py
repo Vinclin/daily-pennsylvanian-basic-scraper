@@ -33,19 +33,24 @@ def scrape_data_point():
 
     if req.ok:
         soup = bs4.BeautifulSoup(req.text, "html.parser")
-        most_read_section = soup.find("a", class_="frontpage-section frontpage-section-inverse section-most-read")
+        # Step 1: Find the "Most Read" section
+        most_read_section = soup.find("span", id="mostRead")
         if most_read_section:
-            target_element = most_read_section.find("a")
-            loguru.logger.info("Found Most Read section.")
+            # Step 2: Find the first most-read-item
+            first_item = most_read_section.find("div", class_="col-sm-5 most-read-item")
+
+            if first_item:
+                # Step 3: Extract the first article headline
+                headline_link = first_item.find("a", class_="frontpage-link standard-link")
+                if headline_link:
+                    headline = headline_link.get_text(strip=True)
+                    print("First Most Read Headline:", headline)
+                else:
+                    print("No article link found inside the first most-read item.")
+            else:
+                print("No most-read items found in the section.")
         else:
-            loguru.logger.warning("Most Read section not found; falling back to main headline.")
-            target_element = soup.find("a", class_="frontpage-link")
-        data_point = "" if target_element is None else target_element.text.strip()
-        loguru.logger.info(f"Data point: {data_point}")
-        return data_point
-    else:
-        loguru.logger.error("Failed to retrieve the page; non-OK status.")
-        return ""
+            print("Most Read section not found on the page.")
 
 
 if __name__ == "__main__":
