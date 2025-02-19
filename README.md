@@ -1,60 +1,66 @@
-# Caily Pennsylvanian Basic Scraper
+# Daily Pennsylvanian Headline Scraper
 
-This template provides a starting point for **git scraping**—the technique of scraping data from websites and automatically committing it to a Git repository using workflows, [coined by Simon Willison](https://simonwillison.net/2020/Oct/9/git-scraping/).
-
-Git scraping helps create an audit trail capturing snapshots of data over time. It leverages Git's version control and a continuous integration's scheduling capabilities to regularly scrape sites and save data without needing to manage servers.
-
-The key benefit is automating web scrapers to run on a schedule with little overhead. The scraped data gets stored incrementally so you can review historical changes. This helps enable use-cases like price monitoring, content updates tracking, research datasets building, and more. The ability to have these resources for virtually free, enables the use of this technique for a wide range of projects.
-
-Tools like GitHub Actions, GitLab CI and others make git scraping adaptable to diverse sites and data needs. The scraping logic just needs to output data serialized formats like CSV, JSON etc which gets committed back to git. This makes the data easily consumable downstream for analysis and vis.
-
-This template includes a sample workflow to demonstrate the core git scraping capabilities. Read on to learn how to customize it!
+This script scrapes a headline from [The Daily Pennsylvanian website](https://www.thedp.com) and saves it to a JSON file that tracks headlines over time.
 
 ## Overview
 
-The workflow defined in `.github/workflows/scrape.yaml` runs on a defined schedule to:
+Originally, the scraper targeted the main headline from the homepage. However, after evaluating different strategies for finding a more engaging headline, the scraping rule was updated. The new approach now targets the **"Most Read"** section on the homepage, which typically highlights the top trending article.
 
-1. Checkout the code
-2. Set up the Python environment
-3. Install dependencies via Pipenv
-4. Run the python script `script.py` to scrape data
-5. Commit any updated data files to the Git repository
+## Modifications
 
-## Scheduling
+### New Scraping Rule
 
-The workflow schedule is configured with [cron syntax](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule) to run:
+- **Target Section:**  
+  The scraper now looks for the "Most Read" section by searching for a `<section>` element with an `id` of `"most-read"`. This section is expected to contain a list of articles ranked by popularity.
 
-- Every day at 8PM UTC
+- **Headline Selection:**  
+  From the "Most Read" section, the script extracts the first `<a>` element, which represents the #1 most read article. This article is assumed to be more relevant or interesting to readers compared to the main headline.
 
-This once-daily scraping is a good rule-of-thumb, as it is generally respectful of the target website, as it does not contribute to any measurable burden to the site's resources.
+- **Fallback Mechanism:**  
+  If the "Most Read" section is not found—perhaps due to changes in the website's HTML structure—the scraper logs a warning and falls back to the original method of extracting the main headline (using the `"frontpage-link"` CSS class).
 
-You can use [crontab.guru](https://crontab.guru/) to generate your own cron schedule.
+- **Improved Request Handling:**  
+  To help avoid HTTP 403 errors that can occur when the website blocks non-browser requests, a custom `User-Agent` header has been added to mimic a real browser.
 
-## Python Libraries
+### Updated Code Snippet
 
-The main libraries used are:
+```python
+def scrape_data_point():
+    """
+    Scrapes the #1 most read article headline from The Daily Pennsylvanian home page.
+    
+    Returns:
+        str: The headline text if found, otherwise an empty string.
+    """
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/90.0.4430.93 Safari/537.36"
+        )
+    }
+    req = requests.get("https://www.thedp.com", headers=headers)
+    loguru.logger.info(f"Request URL: {req.url}")
+    loguru.logger.info(f"Request status code: {req.status_code}")
 
-- [`bs4`](https://www.crummy.com/software/BeautifulSoup/) - BeautifulSoup for parsing HTML
-- [`requests`](https://requests.readthedocs.io/en/latest/) - Making HTTP requests to scrape web pages
-- [`loguru`](https://github.com/Delgan/loguru) - Logging errors and run info
-- [`pytz`](https://github.com/stub42/pytz) - Handling datetimes and timezones  
-- [`waybackpy`](https://github.com/akamhy/waybackpy/) - Scraping web archives (optional)
-
-## Getting Started
-
-To adapt this for your own scraping project:
-
-- Use [this template to create your own repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template#creating-a-repository-from-a-template)
-- Modify `script.py` to scrape different sites and data points:
-  - Modifying the request URL
-  - Parsing the HTML with BeautifulSoup to extract relevant data
-  - Processing and outputting the scraped data as CSV, JSON etc
-- Update the workflow schedule as needed
-- Output and commit the scraped data to CSV, JSON or other formats
-- Add any additional libraries to `Pipfile` that you need
-- Update this `README.md` with project specifics
-
-Feel free to use this as a starter kit for your Python web scraping projects!
+    if req.ok:
+        soup = bs4.BeautifulSoup(req.text, "html.parser")
+        # Attempt to locate the "Most Read" section
+        most_read_section = soup.find("section", {"id": "most-read"})
+        if most_read_section:
+            # Get the first <a> tag within the section as the top most read headline
+            target_element = most_read_section.find("a")
+            loguru.logger.info("Found Most Read section.")
+        else:
+            loguru.logger.warning("Most Read section not found; falling back to main headline.")
+            target_element = soup.find("a", class_="frontpage-link")
+        data_point = "" if target_element is None else target_element.text.strip()
+        loguru.logger.info(f"Data point: {data_point}")
+        return data_point
+    else:
+        loguru.logger.error("Failed to retrieve the page; non-OK status.")
+        return ""
+  ```
 
 ## Setting Up a Local Development
 
@@ -103,6 +109,24 @@ You can then run the script to try it out with:
 ```bash
 pipenv run python script.py
 ```
+
+## Data Storage and Logging
+
+### Data File
+
+Scraped headlines are stored in data/daily_pennsylvanian_headlines.json. The file tracks headlines over time, with each entry timestamped.
+
+### Logs
+
+All operations are logged to scrape.log, providing a detailed runtime trace useful for troubleshooting and auditing.
+
+## Conclusion
+
+This update enhances the scraper by:
+
+- Focusing on the most-read article to provide more engaging content.
+- Implementing a fallback mechanism in case the “Most Read” section is absent.
+- Improving request handling by adding a custom User-Agent header.
 
 ## Licensing
 
