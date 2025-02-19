@@ -1,4 +1,4 @@
-# Basic Git Scraper Template
+# Caily Pennsylvanian Basic Scraper
 
 This template provides a starting point for **git scraping**—the technique of scraping data from websites and automatically committing it to a Git repository using workflows, [coined by Simon Willison](https://simonwillison.net/2020/Oct/9/git-scraping/).
 
