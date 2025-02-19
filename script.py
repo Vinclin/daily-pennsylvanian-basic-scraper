@@ -36,6 +36,9 @@ def scrape_data_point():
     if req.ok:
         soup = bs4.BeautifulSoup(req.text, "html.parser")
         most_read_container = soup.find(id="mostRead")
+        if not most_read_container:
+            loguru.logger.error("Failed to find most read container")
+            return "failed: most read container not found"
         headline_link = most_read_container.find("a", class_="frontpage-link standard-link")
         if not headline_link:
             loguru.logger.error("Failed to find headline link")
