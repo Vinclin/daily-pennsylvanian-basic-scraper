@@ -27,30 +27,35 @@ def scrape_data_point():
             "Chrome/90.0.4430.93 Safari/537.36"
         )
     }
+    # 1. Fetch the webpage
     req = requests.get("https://www.thedp.com", headers=headers)
     loguru.logger.info(f"Request URL: {req.url}")
     loguru.logger.info(f"Request status code: {req.status_code}")
 
+    # 2. Parse the HTML
     if req.ok:
         soup = bs4.BeautifulSoup(req.text, "html.parser")
-        # Step 1: Find the "Most Read" section
+        # 3. Locate the "Most Read" section
         most_read_section = soup.find("span", id="mostRead")
-        if most_read_section:
-            # Step 2: Find the first most-read-item
-            first_item = most_read_section.find("div", class_="col-sm-5 most-read-item")
+        if not most_read_section:
+            print("Could not find the 'mostRead' span.")
+            return None
 
-            if first_item:
-                # Step 3: Extract the first article headline
-                headline_link = first_item.find("a", class_="frontpage-link standard-link")
-                if headline_link:
-                    headline = headline_link.get_text(strip=True)
-                    print("First Most Read Headline:", headline)
-                else:
-                    print("No article link found inside the first most-read item.")
-            else:
-                print("No most-read items found in the section.")
-        else:
-            print("Most Read section not found on the page.")
+        # 4. Find the first "most-read-item"
+        first_item = most_read_section.find("div", class_="col-sm-5 most-read-item")
+        if not first_item:
+            print("No 'most-read-item' div found.")
+            return None
+
+        # 5. Extract the headline from the <a> tag
+        headline_link = first_item.find("a", class_="frontpage-link standard-link")
+        if not headline_link:
+            print("No article link found in the first most-read item.")
+            return None
+
+        # 6. Get the text of the headline
+        headline_text = headline_link.get_text(strip=True)
+        return headline_text
 
 
 if __name__ == "__main__":
