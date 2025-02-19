@@ -35,33 +35,13 @@ def scrape_data_point():
     # 2. Parse the HTML
     if req.ok:
         soup = bs4.BeautifulSoup(req.text, "html.parser")
-        # 3. Locate the "Most Read" section
-        most_read_section = soup.find("span", id="mostRead")
-        if not most_read_section:
-            loguru.logger.error("Could not find the 'mostRead' span.")
-            return "failed: mostRead span not found"
-
-        # 4. Find the first row in the "Most Read" section
-        rows = most_read_section.find_all("div", class_="row")
-        first_row = rows[0] if rows else None
-        if not first_row:
-            loguru.logger.error("No 'row' div found in the 'mostRead' section.")
-            return "failed: row div not found in mostRead section"
-        
-        # 5. Find the first "most-read-item"
-        items = first_row.find_all("div", class_="col-sm-5 most-read-item")
-        first_item = items[0] if items else None
-        if not first_item:
-            loguru.logger.error("No 'most-read-item' div found.")
-            return "failed: most-read-item div not found"
-
-        # 6. Extract the headline from the <a> tag
-        headline_link = first_item.find("a", class_="frontpage-link standard-link")
+        most_read_container = soup.find(id="mostRead")
+        headline_link = most_read_container.find("a", class_="frontpage-link standard-link")
         if not headline_link:
-            loguru.logger.error("No article link found in the first most-read item.")
-            return "failed: article link not found"
+            loguru.logger.error("Failed to find headline link")
+            return "failed: headline link not found"
 
-        # 7. Get the text of the headline
+        # 6. Get the text of the headline
         headline_text = headline_link.get_text(strip=True)
         return headline_text
 
