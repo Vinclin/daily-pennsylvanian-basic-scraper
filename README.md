@@ -1,37 +1,40 @@
-# Daily Pennsylvanian Headline Scraper
+# Daily Pennsylvanian Multimedia Headline Scraper
 
-This script scrapes a headline from [The Daily Pennsylvanian website](https://www.thedp.com) and saves it to a JSON file that tracks headlines over time.
+This script scrapes the headline from the [Daily Pennsylvanian Multimedia page](https://www.thedp.com/multimedia) and saves it to a JSON file that tracks headlines over time.
 
 ## Overview
 
-Originally, the scraper targeted the main headline from the homepage. However, after evaluating different strategies for finding a more engaging headline, the scraping rule was updated. The new approach now targets the **"Most Read"** section on the homepage, which typically highlights the top trending article.
+Originally, the scraper targeted the main headline section on the homepage. However, after evaluating different strategies to obtain a more engaging headline, the scraping rule was updated to focus on the Multimedia page. This page features the latest video or photo story, which is often more visually engaging and timely.
 
 ## Modifications
 
 ### New Scraping Rule
 
-- **Target Section:**  
-  The scraper now looks for the "Most Read" section by searching for a `<section>` element with an `id` of `"most-read"`. This section is expected to contain a list of articles ranked by popularity.
+- **Target Page:**  
+  The script now navigates to the Multimedia page at [https://www.thedp.com/multimedia](https://www.thedp.com/multimedia).
 
 - **Headline Selection:**  
-  From the "Most Read" section, the script extracts the first `<a>` element, which represents the #1 most read article. This article is assumed to be more relevant or interesting to readers compared to the main headline.
+  The scraper searches for the first `<a>` element with the class `"media-headline"`, which is assumed to contain the headline of the latest video or photo story. This decision was made after analyzing the multimedia section’s HTML structure, where visual stories are prominently featured.
 
-- **Fallback Mechanism:**  
-  If the "Most Read" section is not found—perhaps due to changes in the website's HTML structure—the scraper logs a warning and falls back to the original method of extracting the main headline (using the `"frontpage-link"` CSS class).
+- **Error Handling:**  
+  If the multimedia headline is not found, the script logs an error and returns a failure message. This ensures that any changes in the website’s HTML structure or unexpected issues are captured in the logs.
 
 - **Improved Request Handling:**  
-  To help avoid HTTP 403 errors that can occur when the website blocks non-browser requests, a custom `User-Agent` header has been added to mimic a real browser.
+  A custom `User-Agent` header is added to mimic a real browser, helping to avoid HTTP errors that can occur when websites block non-browser requests.
 
 ### Updated Code Snippet
+
+Below is the updated implementation of the `scrape_data_point()` function:
 
 ```python
 def scrape_data_point():
     """
-    Scrapes the #1 most read article headline from The Daily Pennsylvanian home page.
+    Scrapes the headline of the latest video or photo story from The Daily Pennsylvanian Multimedia page.
     
     Returns:
-        str: The headline text if found, otherwise an empty string.
+        str: The headline text if found, otherwise an error message.
     """
+    url = "https://www.thedp.com/multimedia"
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -39,27 +42,24 @@ def scrape_data_point():
             "Chrome/90.0.4430.93 Safari/537.36"
         )
     }
-    req = requests.get("https://www.thedp.com", headers=headers)
+    req = requests.get(url, headers=headers)
     loguru.logger.info(f"Request URL: {req.url}")
     loguru.logger.info(f"Request status code: {req.status_code}")
 
-    if req.ok:
-        soup = bs4.BeautifulSoup(req.text, "html.parser")
-        # Attempt to locate the "Most Read" section
-        most_read_section = soup.find("section", {"id": "most-read"})
-        if most_read_section:
-            # Get the first <a> tag within the section as the top most read headline
-            target_element = most_read_section.find("a")
-            loguru.logger.info("Found Most Read section.")
-        else:
-            loguru.logger.warning("Most Read section not found; falling back to main headline.")
-            target_element = soup.find("a", class_="frontpage-link")
-        data_point = "" if target_element is None else target_element.text.strip()
+    if not req.ok:
+        loguru.logger.error("Failed to retrieve the multimedia page")
+        return "failed: request error"
+    
+    soup = bs4.BeautifulSoup(req.text, "html.parser")
+    # Attempt to locate the latest multimedia headline
+    target_element = soup.find("a", class_="media-headline")
+    if target_element and target_element.text.strip():
+        data_point = target_element.text.strip()
         loguru.logger.info(f"Data point: {data_point}")
         return data_point
     else:
-        loguru.logger.error("Failed to retrieve the page; non-OK status.")
-        return ""
+        loguru.logger.error("Failed to find multimedia headline")
+        return "failed: multimedia headline not found"
   ```
 
 ## Setting Up a Local Development
