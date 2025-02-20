@@ -28,29 +28,26 @@ def scrape_data_point():
         )
     }
     # 1. Fetch the webpage
-    req = requests.get("https://www.thedp.com", headers=headers)
+    req = requests.get("https://www.thedp.com/multimedia", headers=headers)
     loguru.logger.info(f"Request URL: {req.url}")
     loguru.logger.info(f"Request status code: {req.status_code}")
 
-    # 2. Parse the HTML
-    if req.ok:
-        soup = bs4.BeautifulSoup(req.text, "html.parser")
-        most_read_container = soup.find(id="mostRead")
-        if not most_read_container:
-            loguru.logger.error("Failed to find most read container")
-            return "failed: most read container not found"
-        headline_link = most_read_container.find("a", class_="frontpage-link standard-link")
-        if not headline_link:
-            loguru.logger.error("Failed to find headline link")
-            return "failed: headline link not found"
+    if not req.ok:
+        loguru.logger.error("Request failed")
+        return "failed: request error"
 
-        # 6. Get the text of the headline
-        headline_text = headline_link.get_text(strip=True)
-        return headline_text
-
+    soup = bs4.BeautifulSoup(req.text, "html.parser")
+    multimedia_container = soup.find("div", class_="row multimedia-list")
+    if multimedia_container:
+        target_element = multimedia_container.find("a", class_="medium-link")
+        if target_element and target_element.text.strip():
+            data_point = target_element.text.strip()
+            loguru.logger.info(f"Data point found in multimedia_container: {data_point}")
+            return data_point
+        else:
+            loguru.logger.warning("Primary headline link not found in multimedia_container")
     else:
-        loguru.logger.error("Request to the website failed.")
-        return "failed: request failed"
+        loguru.logger.warning("Primary container (multimedia) not found")
 
 
 if __name__ == "__main__":
