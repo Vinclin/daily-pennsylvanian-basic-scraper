@@ -1,0 +1,37 @@
+name: Dependabot Auto-Merge 🤖
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  dependabot-auto-merge:
+    name: Auto-merge Dependabot PRs 🔀
+    runs-on: ubuntu-latest
+    # Only run for PRs opened by Dependabot on this repository (not forks)
+    if: github.actor == 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: 🔍 Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: ✅ Auto-approve and merge patch, minor, and security updates
+        # --auto waits for all required status checks to pass before merging
+        # Auto-merge patch and minor updates, as well as any security vulnerability fixes
+        if: >
+          steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+          steps.metadata.outputs.update-type == 'version-update:semver-minor' ||
+          steps.metadata.outputs.ghsa-ids != ''
+        run: |
+          gh pr review --approve "$PR_URL"
+          gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
