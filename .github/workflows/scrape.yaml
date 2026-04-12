@@ -50,7 +50,7 @@ jobs:
           pipenv run python ./script.py
 
       - name: 🚀 Commit generated logs
-        uses: EndBug/add-and-commit@v9
+        uses: EndBug/add-and-commit@v10
         with:
           message: "Commit updated data 📈"
           add: "./data/*.json"
